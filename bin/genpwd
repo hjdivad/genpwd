@@ -1,0 +1,67 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'digest'
+
+ALPHABET_SHA =      '0123456789abcdef'
+ALPHABET_BETTER =   '!@#$%^&*()_+?~`:'
+
+
+def genpwd(_string=nil, n1=16, n2=8)
+    return usage  unless _string
+
+	string = _string.dup
+    home = ENV['HOME'] || '/'
+    if File.exists? "#{home}/.genpwd/password"
+        string << '-' << File.read("#{home}/.genpwd/password").chomp
+    end
+
+    [
+		gen_preferred(string, n1.to_i),
+		gen_preferred(string, n2.to_i),
+		gen_simple(string, n2.to_i),
+	]
+end
+
+def gen_preferred(string, n)
+    n1 = n/2
+    sha = Digest::SHA256.hexdigest( string )[0...n]
+    interleave( sha[0..n1], encode_better_alphabet(sha[(n1+=1)...n]))
+end
+
+def gen_simple(string, n)
+    Digest::SHA256.hexdigest( string )[0...n]
+end
+
+
+def encode_better_alphabet(a)
+    (0...(a.length)).map do |i|
+        idx = ALPHABET_SHA.index a[i..i]
+        ALPHABET_BETTER[ idx..idx]
+    end
+end
+
+def interleave(a1, a2)
+    acc = ''
+    for i in (0...(a1.length))
+        acc << a1[i]
+        acc << a2[i] if a2[i]
+    end
+    acc << a2[(a1.length)..-1] if a2.length > a1.length
+    acc
+end
+
+
+
+def usage
+"
+Usage: genpwd [string] [length]
+
+    if ~/.gwnpwd/password exists then genpwd will append '-' and the contents of
+    this file to string.  So that, e.g., you can use a 'salt' and then just
+    genpwd url
+"
+end
+
+
+puts genpwd( *ARGV ) if $0 == __FILE__

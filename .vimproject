@@ -1,0 +1,9 @@
+vlh="/home/davidjh/devel/genpwd" CD="." filter="*" {
+ Rakefile
+ bin="bin" {
+  genpwd
+ }
+ spec="spec" filter="*" {
+  genpwd_spec.rb
+ }
+}
