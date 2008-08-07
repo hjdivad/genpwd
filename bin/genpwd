@@ -2,12 +2,123 @@
 
 require 'rubygems'
 require 'digest'
+require 'optparse'
+require 'yaml'
 
-ALPHABET_SHA =      '0123456789abcdef'
-ALPHABET_BETTER =   '!@#$%^&*()_+?~`:'
+
+ALPHABET_BASE = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+ALPHABET_EXT_DEFAULT = '`~!@#$%^&*()_-+=[]{}\|;:"<>/?,.'
 
 
-def genpwd(_string=nil, n1=16, n2=8)
+
+def genpwd( options)
+	return puts( 
+		genpwd_legacy( options[:key], options[:n]).join("\n")
+   ) if options[:legacy]
+
+	path = "#{options[:genpwd]}/password"
+	exists = File.exists? path
+	quit("Unable to find #{path} -- please specify a password") unless 
+		exists or options[:list]
+
+	if options[:list]
+		genpwd_list( options)
+	elsif options[:add]
+		genpwd_add( options)
+	elsif options[:remove]
+		genpwd_remove( options)
+	else
+		genpwd_lookup( options)
+	end
+end
+
+def genpwd_list( options)
+	keys = load_keys options
+	pattern = Regexp.new( options[:pattern])
+
+	puts( keys.select do |entry|
+		entry[:key] =~ pattern	
+	end.map do |entry|
+		k,n,a = entry[:key], entry[:size], entry[:alpha_ext]
+		sz = "\tsize=#{n}" if n
+		alpha = "\talpha-ext=#{a}" if a
+		"#{k}#{sz}#{alpha}"
+	end)
+end
+
+def genpwd_add( options)
+	keys = load_keys( options)
+	new_entry = {
+		:key => options[:key],
+		:size => options[:n],
+		:alpha_ext => options[:alpha_ext]
+	}
+	new_entry.delete(:size) if new_entry[:size] == 16
+	new_entry.delete(:alpha_ext) if 
+		new_entry[:alpha_ext] == ALPHABET_EXT_DEFAULT
+
+	keys.reject!{|entry| entry[:key] == new_entry[:key]}
+	keys << new_entry
+
+	save_keys keys, options
+
+	genpwd_lookup( options)
+end
+
+def genpwd_remove( options)
+	keys = load_keys( options)
+	keys.reject!{|e| e[:key] == options[:key]}
+	save_keys keys, options
+end
+
+def genpwd_lookup( options)
+	keys = load_keys( options)
+	entry = keys.find{|e| e[:key] == options[:key]}
+	return unless entry
+
+	alpha_ext = entry[:alpha_ext] || ALPHABET_EXT_DEFAULT
+	salt = File.read("#{options[:genpwd]}/password")
+
+	key = entry[:key] + '-' + salt
+	size = entry[:size] || 16
+	alphabet = ALPHABET_BASE + alpha_ext
+
+	puts gen( key, size, alphabet)
+end
+
+
+def gen( string, n, alphabet)
+	hash = Digest::SHA256.hexdigest( string)
+	raise "--size cannot be greater than #{hash.size/2}" unless hash.size > n *2
+
+	
+	(1..n).map do |n|
+		letter_ix = hash[(n*2)..(n*2+1)].hex % alphabet.size
+		alphabet[ letter_ix..letter_ix]
+	end.join('')
+end
+
+
+def quit(msg)
+	puts msg
+	exit 1
+end
+
+def load_keys( options)
+	key_file = "#{options[:genpwd]}/keys"
+	keys = File.exists?(key_file) ? YAML::load_file( key_file) : []
+end
+
+def save_keys( keys, options)
+	key_file = "#{options[:genpwd]}/keys"
+	keys.sort!{|e1, e2| e1[:key] <=> e2[:key]}
+	File.open( key_file, 'w'){|f| f.write YAML::dump( keys)}
+end
+
+########################################################################
+# Legacy -- to generate old passwords
+
+def genpwd_legacy(_string=nil, n1=16, n2=8)
     return usage  unless _string
 
 	string = _string.dup
@@ -36,8 +147,8 @@ end
 
 def encode_better_alphabet(a)
     (0...(a.length)).map do |i|
-        idx = ALPHABET_SHA.index a[i..i]
-        ALPHABET_BETTER[ idx..idx]
+        idx = '0123456789abcdef'.index a[i..i]
+        '!@#$%^&*()_+?~`:'[ idx..idx]
     end
 end
 
@@ -50,6 +161,7 @@ def interleave(a1, a2)
     acc << a2[(a1.length)..-1] if a2.length > a1.length
     acc
 end
+########################################################################
 
 
 
@@ -64,4 +176,48 @@ Usage: genpwd [string] [length]
 end
 
 
-puts genpwd( *ARGV ) if $0 == __FILE__
+if $0 == __FILE__
+	options = {
+		:genpwd => File.expand_path('~/.genpwd'),
+		:n => 16,
+		:alpha_ext => ALPHABET_EXT_DEFAULT,
+		:pattern => '.*',
+	}
+
+	OptionParser.new do |opts|
+		opts.on('--report-genpwd') do
+			options[:report] = true
+		end
+
+		opts.on('--genpwd=GENPWD_DIR', "Defaults to ~/.genpwd") do |dir|
+			options[:genpwd] = dir
+		end
+
+		opts.on('--legacy'){|l| options[:legacy] = l}
+
+
+		opts.on('-s', '--size=SIZE', Integer) {|n| options[:n] = n}
+		opts.on('-l', '--list=[PATTERN]') do |p| 
+			options[:list] = true
+			options[:pattern] = p if p
+		end
+		opts.on('--new', '--add'){|add| options[:add] = add}
+		opts.on('--remove'){|rem| options[:remove] = rem}
+
+		opts.on(
+			'-a=SPECIAL_CHARACTERS', '--alphabet-ext=SPECIAL_CHARACTERS'
+		){|a| options[:alpha_ext] = a}
+
+
+		opts.on_tail('-h', '--help'){puts opts; exit(0)}
+	end.parse!( ARGV)
+
+
+	if options[:report]
+		puts options[:genpwd]
+		exit 0
+	end
+
+	options[:key] = ARGV.first
+	genpwd( options)
+end
