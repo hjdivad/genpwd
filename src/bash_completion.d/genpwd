@@ -1,0 +1,26 @@
+have genpwd && 
+_genpwd() {
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+
+	KEYS=""
+	if [ -f $HOME/.genpwd/keys ]; then
+		KEYS=`genpwd --list --keys-only`
+	fi
+
+
+	case "${prev}" in
+	  genpwd)
+	  completions="$KEYS"
+	  ;;
+	esac
+
+	COMPREPLY=( $( compgen -W "$completions" -- $cur ))
+	return 0
+}
+
+[ -n "${have:-}" ] && complete -F _genpwd genpwd
+
+
+# vim:ft=shell:

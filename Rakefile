@@ -17,7 +17,8 @@ desc <<-EOS
 	for documentation.
 EOS
 task :install do
-	FileUtils.cp "bin/genpwd", "/home/davidjh/bin/genpwd"
+	FileUtils.cp "bin/genpwd", "#{ENV['HOME']}/bin/genpwd"
+	FileUtils.cp "src/bash_completion.d/genpwd", "/etc/bash_completion.d/genpwd"
 end
 
 

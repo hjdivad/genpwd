@@ -40,9 +40,15 @@ def genpwd_list( options)
 		entry[:key] =~ pattern	
 	end.map do |entry|
 		k,n,a = entry[:key], entry[:size], entry[:alpha_ext]
-		sz = "\tsize=#{n}" if n
-		alpha = "\talpha-ext=#{a}" if a
-		"#{k}#{sz}#{alpha}"
+		if options[:k]
+			# display only the keys
+			k
+		else
+			# display all information
+			sz = "\tsize=#{n}" if n
+			alpha = "\talpha-ext=#{a}" if a
+			"#{k}#{sz}#{alpha}"
+		end
 	end)
 end
 
@@ -203,6 +209,7 @@ if $0 == __FILE__
 		end
 		opts.on('--new', '--add'){|add| options[:add] = add}
 		opts.on('--remove'){|rem| options[:remove] = rem}
+		opts.on('-k', '--keys-only') {|n| options[:k] = true}
 
 		opts.on(
 			'-a=SPECIAL_CHARACTERS', '--alphabet-ext=SPECIAL_CHARACTERS'
