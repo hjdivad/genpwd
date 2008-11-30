@@ -3,6 +3,9 @@ vlh="/home/davidjh/devel/genpwd" CD="." filter="*" {
  bin="bin" {
   genpwd
  }
+ src="src" filter="*/**" {
+  bash_completion.d/genpwd
+ }
  spec="spec" filter="*" {
   genpwd_spec.rb
   lang_utils.rb
