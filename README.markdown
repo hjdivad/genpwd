@@ -27,6 +27,7 @@ From Source
 -----------
 
 With rake installed, run
+
 	rake install
 
 to have the genpwd binary copied to $HOME/bin and bash completion copied to
@@ -49,20 +50,25 @@ you have a username 'foo' at service 'slashdot.org', you could use the key
 
 
 To add a key and generate a new password, run the following command
+
 	genpwd --add KEY
 
 To add a password of size N
+
 	genpwd --size=SIZE --add KEY
 
 To add a password with a restricted alphabet (note, ascii characters and digits
 are always included)
+
 	genpwd --alpha=SPECIAL_CHARACTERS KEY
 
 e.g.
+
 	genpwd --alpha="[]{}" someone@example.com
 
 
 To retrieve existing passwords, run the command:
+
 	genpwd KEY
 
 Note that it is not necessry to specify either --alpha or --size, even if the
@@ -70,6 +76,7 @@ password was initially created with those options.
 
 If you have bash completion installed, keys will be autocompleted.  So, with the
 prompt reading
+
 	genpwd 
 
 Hitting tab should display a list of keys with normal bash completion.
