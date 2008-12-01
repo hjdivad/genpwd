@@ -12,15 +12,26 @@ directory 'test/genpwd'
 
 ########################################################################
 # Installation and packaging tasks
-desc <<-EOS
-	Install The plugin to ~/.vim/plugin; docs to ~/.vim/doc.  Builds helptags
-	for documentation.
-EOS
+desc %q{
+	Install genpwd to $HOME/bin; completion to /etc/bash_completion.d
+}.gsub(/^\t/, '')
 task :install do
 	FileUtils.cp "bin/genpwd", "#{ENV['HOME']}/bin/genpwd"
-	FileUtils.cp "src/bash_completion.d/genpwd", "/etc/bash_completion.d/genpwd"
+	FileUtils.cp "lib/bash_completion.d/genpwd", "/etc/bash_completion.d/genpwd"
 end
 
+desc %Q{
+	Package the plugin as a tarball.
+}.gsub(/^\t/, '')
+task :tar do
+	FileUtils.rm "genpwd-#{GENPWD_VERSION}.tar.gz", :force => true
+
+	system %Q{
+		tar caf genpwd-#{GENPWD_VERSION}.tar.gz \
+			--transform='s,^(.*),genpwd-#{GENPWD_VERSION}/\\1,x' \
+			bin lib README.markdown
+	}
+end
 
 ########################################################################
 # Clean

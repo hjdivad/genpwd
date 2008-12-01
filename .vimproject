@@ -1,9 +1,10 @@
 vlh="/home/davidjh/devel/genpwd" CD="." filter="*" {
+ README.markdown
  Rakefile
  bin="bin" {
   genpwd
  }
- src="src" filter="*/**" {
+ lib="lib" filter="*/**" {
   bash_completion.d/genpwd
  }
  spec="spec" filter="*" {
